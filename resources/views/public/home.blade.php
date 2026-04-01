@@ -648,6 +648,8 @@
       transition: transform .6s var(--ease);
     }
     .course-card:hover .course-img-bg { transform: scale(1.05); }
+    .course-photo { transition: transform .6s var(--ease); }
+    .course-card:hover .course-photo { transform: scale(1.05); }
     .course-img-icon {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
@@ -1162,7 +1164,7 @@
 
 <!-- HERO -->
 <section id="hero">
-  <div class="hero-bg"></div>
+  <div class="hero-bg" @if(!empty($hero->bg_image)) style="background-image:url('{{ Storage::url($hero->bg_image) }}');background-size:cover;background-position:center;background-blend-mode:overlay;" @endif></div>
   <div class="hero-diagonal"></div>
 
   <svg class="hero-ornament" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1343,13 +1345,18 @@
       @foreach($courses as $i => $course)
       <div class="course-card reveal {{ $i % 3 === 1 ? 'reveal-delay-1' : ($i % 3 === 2 ? 'reveal-delay-2' : '') }}">
         <div class="course-img">
-          <div class="course-img-bg" style="background:{{ $course->card_gradient }};"></div>
-          <div class="course-img-icon">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 36 C12 24 24 8 24 8 C24 8 36 24 36 36"/>
-              <path d="M16 28 L32 28"/><path d="M14 32 L34 32"/><path d="M18 36 L30 36"/>
-            </svg>
-          </div>
+          @if(!empty($course->course_image))
+            <div class="course-img-bg" style="background:{{ $course->card_gradient }};"></div>
+            <img src="{{ Storage::url($course->course_image) }}" alt="{{ $course->course_name }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease);" class="course-photo">
+          @else
+            <div class="course-img-bg" style="background:{{ $course->card_gradient }};"></div>
+            <div class="course-img-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 36 C12 24 24 8 24 8 C24 8 36 24 36 36"/>
+                <path d="M16 28 L32 28"/><path d="M14 32 L34 32"/><path d="M18 36 L30 36"/>
+              </svg>
+            </div>
+          @endif
         </div>
         <div class="course-body">
           <p class="course-cat">{{ $course->category_tag }}</p>

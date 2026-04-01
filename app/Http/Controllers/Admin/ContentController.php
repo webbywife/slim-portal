@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\{Announcement, Hero, HeroStat, About, AlumniChip, OnlineSection, OnlineFeature};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller {
     public function index() {
@@ -49,7 +50,15 @@ class ContentController extends Controller {
             'seal_year' => 'nullable|string|max:20',
             'seal_name' => 'nullable|string|max:80',
             'seal_tagline' => 'nullable|string|max:80',
+            'bg_image' => 'nullable|image|max:5120',
         ]);
+        if ($r->hasFile('bg_image')) {
+            $hero = Hero::find(1);
+            if ($hero && $hero->bg_image) Storage::disk('public')->delete($hero->bg_image);
+            $d['bg_image'] = $r->file('bg_image')->store('hero', 'public');
+        } else {
+            unset($d['bg_image']);
+        }
         Hero::updateOrCreate(['id' => 1], $d);
     }
 

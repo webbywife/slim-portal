@@ -15,7 +15,7 @@
     <div class="card-title">{{ $isEdit ? 'Edit: ' . $course->course_name : 'Create New Course' }}</div>
   </div>
   <div class="card-body">
-    <form method="POST" action="{{ $isEdit ? route('admin.courses.update', $course) : route('admin.courses.store') }}">
+    <form method="POST" action="{{ $isEdit ? route('admin.courses.update', $course) : route('admin.courses.store') }}" enctype="multipart/form-data">
       @csrf
       @if($isEdit) @method('PUT') @endif
 
@@ -58,6 +58,19 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Course Image <span style="color:#888;font-weight:400;">(optional &mdash; replaces the gradient background)</span></label>
+        @if(!empty($course->course_image))
+        <div style="margin-bottom:.75rem;">
+          <img src="{{ Storage::url($course->course_image) }}" style="max-height:120px;border-radius:6px;border:1px solid #ddd;object-fit:cover;">
+          <div style="font-size:.75rem;color:#888;margin-top:.3rem;">Current course image</div>
+        </div>
+        @endif
+        <input type="file" name="course_image" class="form-control" accept="image/*" onchange="previewCourseImg(this)">
+        <div style="margin-top:.5rem;"><img id="course-img-preview" src="" style="display:none;max-height:120px;border-radius:6px;border:1px solid #ddd;object-fit:cover;"></div>
+        <div class="form-hint">Max 5 MB. Recommended: 800x600px. Leave blank to keep current image.</div>
+      </div>
+
       <div style="display:flex;gap:.75rem;margin-top:.5rem;">
         <button type="submit" class="btn-sm btn-primary">{{ $isEdit ? 'Update Course' : 'Create Course' }}</button>
         <a href="{{ route('admin.courses.index') }}" class="btn-sm btn-outline">Cancel</a>
@@ -67,6 +80,13 @@
 </div>
 
 <script>
+  function previewCourseImg(input) {
+    const preview = document.getElementById('course-img-preview');
+    if (input.files && input.files[0]) {
+      preview.src = URL.createObjectURL(input.files[0]);
+      preview.style.display = 'block';
+    }
+  }
   const gi = document.getElementById('gradientInput');
   const gp = document.getElementById('gradientPreview');
   function updatePreview() { gp.style.background = gi.value; }

@@ -41,7 +41,7 @@
     <div class="card">
       <div class="card-header"><div class="card-title">Hero Section</div></div>
       <div class="card-body">
-        <form method="POST" action="{{ route('admin.content.update', 'hero') }}">
+        <form method="POST" action="{{ route('admin.content.update', 'hero') }}" enctype="multipart/form-data">
           @csrf
           <div class="form-group">
             <label>Eyebrow Text</label>
@@ -95,6 +95,19 @@
               <label>Seal Tagline</label>
               <input type="text" name="seal_tagline" class="form-control" value="{{ $hero->seal_tagline ?? '' }}">
             </div>
+          </div>
+          <hr class="section-divider">
+          <div class="form-group">
+            <label>Hero Background Image <span style="color:#888;font-weight:400;">(optional &mdash; replaces the default gradient)</span></label>
+            @if(!empty($hero->bg_image))
+            <div style="margin-bottom:.75rem;">
+              <img src="{{ Storage::url($hero->bg_image) }}" style="max-height:120px;border-radius:6px;border:1px solid #ddd;object-fit:cover;width:100%;">
+              <div style="font-size:.75rem;color:#888;margin-top:.3rem;">Current background image</div>
+            </div>
+            @endif
+            <input type="file" name="bg_image" class="form-control" accept="image/*" onchange="previewHeroBg(this)">
+            <div style="margin-top:.5rem;"><img id="hero-bg-preview" src="" style="display:none;max-height:120px;border-radius:6px;border:1px solid #ddd;object-fit:cover;width:100%;"></div>
+            <div class="form-hint">Max 5 MB. Recommended: 1920x1080px landscape. Leave blank to keep current image.</div>
           </div>
           <button type="submit" class="btn-sm btn-primary">Save Hero</button>
         </form>
@@ -289,6 +302,13 @@
 </div>
 
 <script>
+function previewHeroBg(input) {
+  const preview = document.getElementById('hero-bg-preview');
+  if (input.files && input.files[0]) {
+    preview.src = URL.createObjectURL(input.files[0]);
+    preview.style.display = 'block';
+  }
+}
 let statIdx = {{ $heroStats->count() }};
 let chipIdx = {{ $alumniChips->count() }};
 let featIdx = {{ $onlineFeatures->count() }};
