@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LXD AI — Course Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --primary:#4F46E5;--primary-dark:#3730A3;--primary-light:#6366F1;
+      --green:#10B981;--amber:#F59E0B;--red:#EF4444;--purple:#8B5CF6;--teal:#0D9488;
+      --bg:#F8FAFC;--surface:#FFFFFF;--s2:#F1F5F9;--border:#E2E8F0;
+      --text:#0F172A;--muted:#64748B;--light:#94A3B8;--r:8px;--rlg:12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+
+    /* Header */
+    .app-header{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 60%,var(--primary-light) 100%);color:white;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 12px rgba(79,70,229,.3);position:sticky;top:0;z-index:100}
+    .brand{display:flex;align-items:center;gap:.75rem}
+    .brand-icon{width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+    .brand-name{font-size:1.1rem;font-weight:800;letter-spacing:-.3px}
+    .brand-sub{font-size:.68rem;opacity:.7;margin-top:.1rem}
+    .key-status{display:flex;align-items:center;gap:.5rem;font-size:.78rem;background:rgba(255,255,255,.15);border-radius:20px;padding:.3rem .875rem}
+    .kdot{width:8px;height:8px;border-radius:50%;background:#6EE7B7}
+    .kdot.off{background:#FCA5A5}
+
+    /* Steps */
+    .steps-bar{background:white;border-bottom:1px solid var(--border);display:flex;padding:0 2rem;overflow-x:auto}
+    .step-item{display:flex;align-items:center;gap:.5rem;padding:.875rem 1rem;font-size:.8rem;color:var(--light);border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .2s}
+    .step-item.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
+    .step-item.done{color:var(--green)}
+    .step-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;background:var(--light);color:white}
+    .step-item.active .step-num{background:var(--primary)}
+    .step-item.done .step-num{background:var(--green)}
+
+    .main{max-width:960px;margin:2rem auto;padding:0 1.5rem 4rem}
+
+    /* Card */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;margin-bottom:1.25rem}
+    .card-hdr{padding:1.125rem 1.5rem;border-bottom:1px solid var(--border);background:var(--s2);display:flex;align-items:center;justify-content:space-between}
+    .card-hdr h2{font-size:1rem;font-weight:800}
+    .card-hdr p{font-size:.78rem;color:var(--muted);margin-top:.2rem}
+    .card-body{padding:1.5rem}
+
+    /* Form */
+    .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .fg{display:flex;flex-direction:column;gap:.35rem}
+    .fg.full{grid-column:1/-1}
+    label{font-size:.775rem;font-weight:700;color:var(--text);letter-spacing:.02em}
+    label .req{color:var(--red)}
+    input,select,textarea{width:100%;padding:.6rem .875rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.875rem;color:var(--text);background:white;transition:border-color .15s,box-shadow .15s;outline:none;font-family:inherit;appearance:none}
+    input[type=password]{font-family:monospace;letter-spacing:.08em}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+    textarea{resize:vertical;min-height:70px}
+    .hint{font-size:.7rem;color:var(--muted)}
+    .rrow{display:flex;align-items:center;gap:.875rem}
+    input[type=range]{flex:1;height:6px;padding:0;border:none;box-shadow:none;accent-color:var(--primary)}
+    .rval{font-size:.9rem;font-weight:800;color:var(--primary);min-width:2rem;text-align:center}
+
+    /* Key row */
+    .key-row{display:flex;gap:.5rem;align-items:center}
+    .key-row input{flex:1}
+    .key-saved{font-size:.72rem;color:var(--green);font-weight:700;margin-top:.4rem;display:none}
+
+    /* Option cards */
+    .ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.625rem}
+    .ocard{border:2px solid var(--border);border-radius:var(--r);padding:.75rem .625rem;cursor:pointer;transition:all .15s;text-align:center;user-select:none}
+    .ocard:hover{border-color:var(--primary-light);background:#EEF2FF}
+    .ocard.selected{border-color:var(--primary);background:#EEF2FF}
+    .ocard.ai-card.selected{border-color:var(--teal);background:#F0FDFA}
+    .ocard.ai-card:hover{border-color:var(--teal);background:#F0FDFA}
+    .oicon{font-size:1.5rem;margin-bottom:.3rem}
+    .oname{font-size:.72rem;font-weight:800;color:var(--text);line-height:1.3}
+    .osub{font-size:.63rem;color:var(--muted);margin-top:.15rem}
+    .ai-badge{display:inline-block;background:linear-gradient(135deg,#0D9488,#0891B2);color:white;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:800;margin-top:.2rem}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:.45rem;padding:.6rem 1.2rem;border-radius:var(--r);font-size:.875rem;font-weight:700;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;font-family:inherit}
+    .btn-primary{background:var(--primary);color:white}
+    .btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.3)}
+    .btn-secondary{background:var(--s2);color:var(--text);border:1.5px solid var(--border)}
+    .btn-secondary:hover{background:var(--border)}
+    .btn-success{background:var(--green);color:white}
+    .btn-success:hover{opacity:.9;transform:translateY(-1px)}
+    .btn-sm-danger{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;font-size:.75rem;padding:.35rem .75rem}
+    .btn-lg{padding:.875rem 2rem;font-size:.95rem}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .bgrp{display:flex;gap:.625rem;flex-wrap:wrap;align-items:center}
+
+    /* Alerts */
+    .alert{padding:.75rem 1rem;border-radius:var(--r);font-size:.85rem;margin-bottom:1rem}
+    .alert-error{background:#FEE2E2;border:1px solid #FECACA;color:#991B1B}
+    .alert-info{background:#EEF2FF;border:1px solid #C7D2FE;color:#3730A3}
+
+    /* Generating */
+    .gen-wrap{text-align:center;padding:2.5rem 2rem}
+    .spinner{width:56px;height:56px;border:5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.5rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .gen-title{font-size:1.2rem;font-weight:800;margin-bottom:.4rem}
+    .gen-sub{font-size:.875rem;color:var(--muted);margin-bottom:1.75rem}
+    .plist{display:flex;flex-direction:column;gap:.5rem;max-width:420px;margin:0 auto;text-align:left}
+    .pi{display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:var(--s2);border-radius:var(--r);font-size:.825rem;color:var(--muted);transition:all .3s}
+    .pi.active{background:#EEF2FF;color:var(--primary);font-weight:700}
+    .pi.done{background:#D1FAE5;color:#065F46}
+    .pspin{width:16px;height:16px;flex-shrink:0;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
+    .picon{font-size:.9rem;flex-shrink:0}
+
+    /* Preview — course hero */
+    .course-hero{background:linear-gradient(135deg,var(--primary-dark),var(--primary) 60%,var(--primary-light));color:white;border-radius:var(--rlg);padding:2rem;margin-bottom:1.25rem}
+    .course-hero h1{font-size:1.5rem;font-weight:900;margin-bottom:.5rem;line-height:1.25}
+    .course-hero p{opacity:.85;font-size:.875rem;max-width:640px;line-height:1.65}
+    .meta-tags{display:flex;flex-wrap:wrap;gap:.5rem;margin:.875rem 0}
+    .mtag{background:rgba(255,255,255,.18);border-radius:20px;padding:.25rem .875rem;font-size:.72rem;font-weight:700}
+    .cstats{display:flex;gap:1.5rem;flex-wrap:wrap}
+    .cstat{display:flex;align-items:center;gap:.4rem;font-size:.8rem;opacity:.9}
+    .cstat strong{font-weight:800}
+    .eu-box{background:rgba(255,255,255,.12);border-radius:var(--r);padding:1rem 1.25rem;margin-top:1rem}
+    .eu-box h4{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;opacity:.75;margin-bottom:.5rem}
+    .eu-item{font-size:.8rem;opacity:.9;display:flex;gap:.5rem;margin-bottom:.25rem}
+    .eu-item::before{content:"◆";font-size:.5rem;margin-top:.35rem;flex-shrink:0}
+
+    .prev-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+    .prev-toolbar h2{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+    /* Module tree */
+    .mlist{display:flex;flex-direction:column;gap:.75rem}
+    .mitem{background:white;border:1.5px solid var(--border);border-radius:var(--rlg);overflow:hidden;transition:box-shadow .15s}
+    .mitem:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+    .mhdr{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;cursor:pointer;user-select:none;background:var(--s2);border-bottom:1px solid transparent;transition:background .15s}
+    .mitem.open>.mhdr{border-bottom-color:var(--border)}
+    .mhdr:hover{background:#E8EDF5}
+    .mnum{width:36px;height:36px;background:var(--primary);color:white;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0}
+    .minfo{flex:1;min-width:0}
+    .mtitle{font-weight:800;font-size:.9rem}
+    .mmeta{font-size:.75rem;color:var(--muted);margin-top:.1rem}
+    .chev{font-size:.7rem;color:var(--muted);transition:transform .2s}
+    .mitem.open>.mhdr .chev{transform:rotate(180deg)}
+    .mbody{display:none;padding:1rem}
+    .mitem.open>.mbody{display:block}
+    .mdesc{font-size:.82rem;color:var(--muted);margin-bottom:.75rem}
+    .mouts{display:flex;flex-direction:column;gap:.25rem;margin-bottom:1rem}
+    .mout{font-size:.78rem;display:flex;gap:.5rem}
+    .mout::before{content:"→";color:var(--primary);font-weight:800;flex-shrink:0}
+
+    /* Lessons */
+    .llist{display:flex;flex-direction:column;gap:.5rem}
+    .litem{border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .lhdr{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;cursor:pointer;user-select:none;transition:background .15s}
+    .lhdr:hover,.litem.open>.lhdr{background:var(--s2)}
+    .lnum{width:28px;height:28px;background:var(--primary-light);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+    .linfo{flex:1}
+    .ltitle{font-weight:700;font-size:.85rem}
+    .lmeta{font-size:.72rem;color:var(--muted);display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.1rem}
+    .blbadge{background:#EDE9FE;color:#5B21B6;border-radius:10px;padding:.1rem .5rem;font-size:.65rem;font-weight:800}
+    .litem.open>.lhdr .chev{transform:rotate(180deg)}
+    .lbody{display:none;padding:1rem;border-top:1px solid var(--border);background:#FAFBFD}
+    .litem.open>.lbody{display:block}
+
+    /* Lesson content sections */
+    .slabel{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.45rem}
+    .eq-box{background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border-left:3px solid var(--purple);border-radius:0 var(--r) var(--r) 0;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;font-style:italic;color:#4C1D95;font-weight:600}
+    .obj-list{display:flex;flex-direction:column;gap:.3rem;margin-bottom:1rem}
+    .obj-item{display:flex;gap:.5rem;font-size:.8rem}
+    .obj-item::before{content:"→";color:var(--primary);font-weight:800;flex-shrink:0}
+    .terms-grid{display:flex;flex-direction:column;gap:.375rem;margin-bottom:1rem}
+    .term-row{display:flex;gap:.5rem;font-size:.8rem;background:white;border:1px solid var(--border);border-radius:var(--r);padding:.5rem .75rem}
+    .term-w{font-weight:800;color:var(--primary);flex-shrink:0;min-width:110px}
+    .hook-box{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border-left:3px solid var(--amber);border-radius:0 var(--r) var(--r) 0;padding:.875rem 1rem;margin-bottom:1rem}
+    .hook-box strong{display:block;font-size:.65rem;color:#92400E;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem}
+    .hook-box p{font-size:.82rem;line-height:1.65}
+    .content-box{background:white;border:1px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;font-size:.825rem;line-height:1.75;margin-bottom:1rem}
+    .rwa-box{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:.875rem 1rem;margin-bottom:1rem}
+    .rwa-box strong{display:block;font-size:.65rem;color:#065F46;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem}
+    .rwa-box p{font-size:.82rem;line-height:1.65}
+    .reflect-box{background:#F0FDF4;border:1px dashed #6EE7B7;border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;font-style:italic;color:#065F46}
+    .reflect-box strong{display:block;font-style:normal;font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem}
+
+    /* 4Cs */
+    .fourccs{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem}
+    .cc{padding:.625rem .75rem;border-radius:var(--r);font-size:.78rem}
+    .cc strong{display:block;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem}
+    .cc.ct{background:#DBEAFE;color:#1E40AF}
+    .cc.co{background:#D1FAE5;color:#065F46}
+    .cc.cl{background:#FEF3C7;color:#92400E}
+    .cc.cr{background:#FEE2E2;color:#991B1B}
+
+    /* References */
+    .refs-box{background:var(--s2);border-radius:var(--r);padding:.875rem 1rem;margin-bottom:1rem}
+    .ref-item{font-size:.75rem;color:var(--muted);padding:.35rem 0;border-bottom:1px solid var(--border);font-style:italic}
+    .ref-item:last-child{border:none}
+    .ref-type{display:inline-block;background:white;border:1px solid var(--border);border-radius:10px;padding:.05rem .5rem;font-size:.62rem;font-weight:800;font-style:normal;color:var(--primary);margin-right:.4rem}
+
+    /* AI Tools */
+    .ai-tools{display:flex;flex-wrap:wrap;gap:.375rem;margin-bottom:1rem}
+    .ai-tool{display:flex;align-items:center;gap:.35rem;padding:.3rem .75rem;background:linear-gradient(135deg,#F0FDFA,#CCFBF1);border:1px solid #99F6E4;border-radius:20px;font-size:.72rem;font-weight:700;color:#134E4A}
+
+    /* Activity tabs */
+    .atabs{display:flex;gap:.375rem;margin-bottom:.875rem;flex-wrap:wrap}
+    .atab{padding:.35rem .875rem;border-radius:20px;font-size:.775rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--muted);transition:all .15s;font-family:inherit}
+    .atab:hover{border-color:var(--primary);color:var(--primary)}
+    .atab.active{color:white;border-color:transparent}
+    .atab.tq.active{background:var(--amber)}
+    .atab.te.active{background:var(--green)}
+    .atab.td.active{background:var(--purple)}
+    .atab.tp.active{background:var(--red)}
+    .apanel{display:none}
+    .apanel.active{display:block}
+    .abox{background:white;border:1.5px solid var(--border);border-radius:var(--r);padding:1rem}
+    .abox h5{font-size:.85rem;font-weight:800;margin-bottom:.875rem}
+    .abox.quiz{border-top:3px solid var(--amber)}
+    .abox.exercise{border-top:3px solid var(--green)}
+    .abox.discussion{border-top:3px solid var(--purple)}
+    .abox.project{border-top:3px solid var(--red)}
+    .qi{background:var(--s2);border-radius:var(--r);padding:.75rem;margin-bottom:.5rem;font-size:.8rem}
+    .qt{font-weight:700;margin-bottom:.5rem}
+    .qopts{display:flex;flex-direction:column;gap:.2rem;padding-left:.75rem}
+    .qopt{padding:.25rem .5rem;border-radius:4px}
+    .qopt.ok{background:#D1FAE5;color:#065F46;font-weight:700}
+    .qexpl{font-size:.72rem;color:var(--muted);font-style:italic;margin-top:.4rem}
+    .einst{font-size:.78rem;color:var(--muted);margin-bottom:.75rem}
+    .eitem{display:flex;gap:.5rem;align-items:flex-start;background:var(--s2);border-radius:var(--r);padding:.625rem .75rem;margin-bottom:.375rem;font-size:.8rem}
+    .eans{color:var(--green);font-weight:700;margin-left:.375rem}
+    .dp{display:flex;gap:.5rem;background:#F5F3FF;border-radius:var(--r);padding:.625rem .75rem;margin-bottom:.375rem;font-size:.8rem}
+    .dn{width:22px;height:22px;background:var(--purple);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0}
+    .gact{background:#EDE9FE;border-left:3px solid var(--purple);padding:.75rem 1rem;border-radius:0 var(--r) var(--r) 0;margin-top:.75rem;font-size:.8rem}
+    .gact strong{display:block;font-size:.65rem;color:#5B21B6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+    .pstep{display:flex;gap:.625rem;align-items:flex-start;background:var(--s2);border-radius:var(--r);padding:.5rem .75rem;margin-bottom:.35rem;font-size:.8rem}
+    .psn{width:22px;height:22px;background:var(--red);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.05rem}
+    .pdel{font-size:.8rem;background:var(--s2);padding:.4rem .75rem;border-radius:var(--r);margin-bottom:.25rem}
+    .rtbl{width:100%;border-collapse:collapse;font-size:.72rem}
+    .rtbl th{background:#FEE2E2;color:#991B1B;padding:.45rem .625rem;text-align:left;border:1px solid #FECACA;font-weight:800}
+    .rtbl td{padding:.45rem .625rem;border:1px solid var(--border);vertical-align:top}
+    .rtbl tr:nth-child(even) td{background:var(--s2)}
+
+    /* Export card */
+    .export-card{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1px solid #6EE7B7;border-radius:var(--rlg);padding:1.5rem;margin-top:1.5rem}
+    .export-card h3{font-size:.95rem;font-weight:800;color:#064E3B;margin-bottom:.3rem}
+    .export-card p{font-size:.825rem;color:#065F46;margin-bottom:1rem}
+
+    .hidden{display:none!important}
+    @media(max-width:600px){
+      .fgrid{grid-template-columns:1fr}
+      .main{padding:0 1rem 3rem;margin:1rem auto}
+      .ogrid{grid-template-columns:repeat(2,1fr)}
+      .fourccs{grid-template-columns:1fr}
+      .prev-toolbar{flex-direction:column;align-items:flex-start;gap:.75rem}
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-icon">🎓</div>
+    <div>
+      <div class="brand-name">LXD AI — Course Generator</div>
+      <div class="brand-sub">Andragogy · Connectivism · Heutagogy · Bloom's · UbD · SCORM 1.2</div>
+    </div>
+  </div>
+  <div class="key-status">
+    <span class="kdot off" id="kdot"></span>
+    <span id="ktext">No API key</span>
+  </div>
+</header>
+
+<nav class="steps-bar">
+  <div class="step-item active" data-step="1"><div class="step-num">1</div> Setup</div>
+  <div class="step-item" data-step="2"><div class="step-num">2</div> Generating</div>
+  <div class="step-item" data-step="3"><div class="step-num">3</div> Preview &amp; Export</div>
+</nav>
+
+<main class="main">
+
+  <!-- SETUP -->
+  <div id="setupScreen">
+    <div class="card">
+      <div class="card-hdr">
+        <div><h2>🔑 Anthropic API Key</h2><p>Saved automatically — enter once, never again</p></div>
+      </div>
+      <div class="card-body">
+        <div class="key-row">
+          <input type="password" id="apiKey" placeholder="sk-ant-api..." autocomplete="off"
+            oninput="autoSaveKey(this.value)">
+          <button class="btn btn-sm-danger" onclick="clearKey()">Clear</button>
+        </div>
+        <div class="key-saved" id="keySaved">✓ API key saved to browser memory</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><h2>Course Configuration</h2><p>Academically rigorous adult learning course</p></div>
+      <div class="card-body">
+        <div id="errMsg" class="alert alert-error hidden"></div>
+        <div class="fgrid">
+          <div class="fg full">
+            <label>Course Title <span class="req">*</span></label>
+            <input type="text" id="courseTitle" placeholder="e.g. Strategic Leadership in the Digital Age">
+          </div>
+          <div class="fg">
+            <label>Subject / Niche <span class="req">*</span></label>
+            <select id="subject">
+              <option value="">Select subject...</option>
+              <option>Leadership &amp; Management</option>
+              <option>Business Strategy &amp; Innovation</option>
+              <option>Entrepreneurship</option>
+              <option>Marketing &amp; Digital Marketing</option>
+              <option>Finance &amp; Accounting</option>
+              <option>Human Resources &amp; OD</option>
+              <option>Project Management</option>
+              <option>Information Technology &amp; Systems</option>
+              <option>Data Analytics &amp; Business Intelligence</option>
+              <option>Artificial Intelligence &amp; Machine Learning</option>
+              <option>Cybersecurity</option>
+              <option>Software Development</option>
+              <option>Education &amp; Teaching (Higher Ed)</option>
+              <option>Instructional Design &amp; Learning Technology</option>
+              <option>Healthcare Administration</option>
+              <option>Public Administration &amp; Governance</option>
+              <option>Communication &amp; Public Speaking</option>
+              <option>Research Methods</option>
+              <option>Environmental Sustainability</option>
+              <option>Vocational &amp; Technical Training</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Target Audience <span class="req">*</span></label>
+            <select id="audience">
+              <option value="">Select audience...</option>
+              <optgroup label="Professional">
+                <option>Working Professional — Entry Level</option>
+                <option>Working Professional — Mid-Career</option>
+                <option>Working Professional — Senior / Expert</option>
+                <option>Executive &amp; C-Suite Leadership</option>
+              </optgroup>
+              <optgroup label="Academic (Adult)">
+                <option>Undergraduate — College</option>
+                <option>Graduate / Post-Graduate</option>
+                <option>Academic Researchers</option>
+              </optgroup>
+              <optgroup label="Continuing Education">
+                <option>Continuing Professional Development (CPD)</option>
+                <option>Career Changers &amp; Re-skilling</option>
+                <option>Vocational &amp; Technical (Adult)</option>
+                <option>Lifelong Learners — General Adult</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Number of Modules</label>
+            <div class="rrow">
+              <input type="range" id="numMod" min="2" max="5" value="3" oninput="document.getElementById('nmv').textContent=this.value">
+              <span class="rval" id="nmv">3</span>
+            </div>
+            <span class="hint">2–5 modules</span>
+          </div>
+          <div class="fg">
+            <label>Lessons per Module</label>
+            <div class="rrow">
+              <input type="range" id="lpm" min="2" max="4" value="3" oninput="document.getElementById('lpv').textContent=this.value">
+              <span class="rval" id="lpv">3</span>
+            </div>
+            <span class="hint">2–4 lessons</span>
+          </div>
+          <div class="fg full">
+            <label>Overall Learning Outcomes</label>
+            <textarea id="outcomes" placeholder="What will learners DO after completing this course? e.g. 'Design and implement a data-driven decision-making framework for their organization'"></textarea>
+          </div>
+        </div>
+
+        <!-- Curriculum Framework -->
+        <div style="margin-top:1.25rem">
+          <div class="slabel" style="margin-bottom:.625rem">Curriculum Framework <span class="req">*</span></div>
+          <div class="ogrid">
+            <label class="ocard selected" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="Bloom's Taxonomy (Revised) + 4Cs Framework" style="display:none" checked>
+              <div class="oicon">🧠</div><div class="oname">Bloom's Taxonomy</div><div class="osub">Revised + 4Cs</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="Understanding by Design (UbD / Backward Design)" style="display:none">
+              <div class="oicon">🎯</div><div class="oname">UbD</div><div class="osub">Backward Design</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="ADDIE Instructional Design Model" style="display:none">
+              <div class="oicon">🔄</div><div class="oname">ADDIE</div><div class="osub">Analyze–Design–Develop</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="Outcomes-Based Education (OBE)" style="display:none">
+              <div class="oicon">📋</div><div class="oname">OBE</div><div class="osub">Outcomes-Based</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="Competency-Based Education (CBE)" style="display:none">
+              <div class="oicon">🏅</div><div class="oname">CBE</div><div class="osub">Skill Mastery</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'fw')">
+              <input type="radio" name="fw" value="Universal Design for Learning (UDL)" style="display:none">
+              <div class="oicon">♿</div><div class="oname">UDL</div><div class="osub">Inclusive Design</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Teaching Methodology -->
+        <div style="margin-top:1.25rem">
+          <div class="slabel" style="margin-bottom:.375rem">Teaching Methodology <span class="req">*</span></div>
+          <div style="font-size:.7rem;color:var(--teal);font-weight:700;margin-bottom:.625rem">★ Recommended for adult learning in the AI age</div>
+          <div class="ogrid">
+            <label class="ocard ai-card selected" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Connectivism (Siemens & Downes) — Learning through Digital Networks and AI" style="display:none" checked>
+              <div class="oicon">🌐</div><div class="oname">Connectivism</div><div class="osub">Siemens &amp; Downes</div>
+              <div class="ai-badge">★ AI Age</div>
+            </label>
+            <label class="ocard ai-card" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Heutagogy (Hase & Kenyon) — Self-Determined Learning with AI as Learning Partner" style="display:none">
+              <div class="oicon">🧭</div><div class="oname">Heutagogy</div><div class="osub">Hase &amp; Kenyon</div>
+              <div class="ai-badge">★ AI Age</div>
+            </label>
+            <label class="ocard ai-card" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Transformative Learning (Mezirow) — Critical Reflection in the AI Era" style="display:none">
+              <div class="oicon">🦋</div><div class="oname">Transformative</div><div class="osub">Mezirow</div>
+              <div class="ai-badge">★ AI Age</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Project-Based Learning (PBL)" style="display:none">
+              <div class="oicon">🏗️</div><div class="oname">Project-Based</div><div class="osub">PBL</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Problem-Based Learning" style="display:none">
+              <div class="oicon">🧩</div><div class="oname">Problem-Based</div><div class="osub">Real-world problems</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Case-Based Learning" style="display:none">
+              <div class="oicon">📁</div><div class="oname">Case-Based</div><div class="osub">Industry cases</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Experiential Learning — Kolb's Learning Cycle" style="display:none">
+              <div class="oicon">🌀</div><div class="oname">Experiential</div><div class="osub">Kolb's Cycle</div>
+            </label>
+            <label class="ocard" onclick="pick(this,'mt')">
+              <input type="radio" name="mt" value="Collaborative & Cooperative Learning" style="display:none">
+              <div class="oicon">🤝</div><div class="oname">Collaborative</div><div class="osub">Team-centered</div>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
+          <button class="btn btn-primary btn-lg" onclick="startGeneration()">✨ Generate Complete Course</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATING -->
+  <div id="generatingScreen" class="hidden">
+    <div class="card">
+      <div class="card-body">
+        <div class="gen-wrap">
+          <div class="spinner"></div>
+          <div class="gen-title" id="genTitle">Building Your Course...</div>
+          <div class="gen-sub" id="genSub">Applying your framework &amp; methodology — multiple AI calls for quality</div>
+          <div class="plist" id="plist"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="previewScreen" class="hidden">
+    <div id="courseHero" class="course-hero"></div>
+    <div class="prev-toolbar">
+      <h2>Course Outline</h2>
+      <div class="bgrp">
+        <button class="btn btn-secondary" onclick="resetApp()">↩ Start Over</button>
+        <button class="btn btn-success" onclick="exportScorm()">📦 Export SCORM 1.2</button>
+      </div>
+    </div>
+    <div id="mlist" class="mlist"></div>
+    <div class="export-card">
+      <h3>📦 Export Options</h3>
+      <p>Download a SCORM 1.2 package (Moodle, Canvas, Blackboard). Each lesson includes interactive quizzes with LMS score tracking, references, and AI tool recommendations.</p>
+      <div class="bgrp">
+        <button class="btn btn-success btn-lg" onclick="exportScorm()">Download SCORM Package (.zip)</button>
+        <button class="btn btn-secondary" onclick="exportJson()">Export Raw JSON</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── API Key ──────────────────────────────────────────────────────────────
+const KEY_STORE = 'lxd_ant_key';
+function autoSaveKey(v) { if(v.trim()){localStorage.setItem(KEY_STORE,v.trim());setKStatus(true);document.getElementById('keySaved').style.display='block';} }
+function clearKey(){ localStorage.removeItem(KEY_STORE);document.getElementById('apiKey').value='';document.getElementById('keySaved').style.display='none';setKStatus(false); }
+function setKStatus(ok){ document.getElementById('kdot').className='kdot'+(ok?'':' off');document.getElementById('ktext').textContent=ok?'API key ready':'No API key'; }
+(function loadKey(){ const s=localStorage.getItem(KEY_STORE);if(s){document.getElementById('apiKey').value=s;setKStatus(true);document.getElementById('keySaved').style.display='block';} })();
+
+// ── State ─────────────────────────────────────────────────────────────────
+let courseData=null, cfg=null, progTimer=null;
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function hesc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function xesc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function showStep(n){document.querySelectorAll('[data-step]').forEach(el=>{const s=+el.dataset.step;el.classList.toggle('active',s===n);el.classList.toggle('done',s<n);})}
+function showScreen(id){['setupScreen','generatingScreen','previewScreen'].forEach(s=>document.getElementById(s).classList.toggle('hidden',s!==id))}
+function showError(m){const el=document.getElementById('errMsg');el.textContent=m;el.classList.remove('hidden')}
+function hideError(){document.getElementById('errMsg').classList.add('hidden')}
+function pick(card,name){document.querySelectorAll(`input[name="${name}"]`).forEach(r=>r.closest('.ocard').classList.remove('selected'));card.classList.add('selected')}
+
+// ── Progress helpers ──────────────────────────────────────────────────────
+function addProgItem(id, text){
+  const el=document.createElement('div');
+  el.className='pi active';el.id='pi_'+id;
+  el.innerHTML=`<span class="pspin"></span><span>${text}</span>`;
+  document.getElementById('plist').appendChild(el);
+}
+function doneProgItem(id){
+  const el=document.getElementById('pi_'+id);
+  if(!el)return;
+  el.classList.remove('active');el.classList.add('done');
+  const sp=el.querySelector('.pspin');if(sp)sp.outerHTML='<span class="picon">✓</span>';
+}
+
+// ── Safe JSON parse ───────────────────────────────────────────────────────
+function safeJSON(text){
+  const t=text.trim();
+  const attempts=[
+    ()=>JSON.parse(t),
+    ()=>JSON.parse(t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')),
+    ()=>{const m=t.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('no match');}
+  ];
+  for(const fn of attempts){try{return fn();}catch(e){}}
+  console.error('Failed to parse AI response. First 500 chars:', t.substring(0,500));
+  throw new Error('AI response could not be parsed as JSON. Try again.');
+}
+
+// ── API call ──────────────────────────────────────────────────────────────
+async function callAPI(apiKey, prompt, maxTokens=4000){
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'API error '+res.status);}
+  const r=await res.json();
+  return r.content[0].text;
+}
+
+// ── PHASE 1: Course skeleton (titles + Bloom's levels only, no lesson content) ─
+function buildStructurePrompt(c){
+  const outLine=c.outcomes?`\n- Desired Outcomes: ${c.outcomes}`:'';
+  return `You are a senior instructional designer. Create a course structure outline for ADULT LEARNERS.
+- Title: "${c.courseTitle}"
+- Subject: ${c.subject}
+- Audience: ${c.audience}
+- Framework: ${c.framework}
+- Methodology: ${c.method}
+- Modules: ${c.numModules}
+- Lessons per module: ${c.lpm}${outLine}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "courseTitle": "string",
+  "courseDescription": "string (3-4 sentences)",
+  "subject": "string",
+  "targetAudience": "string",
+  "framework": "string",
+  "methodology": "string",
+  "enduringUnderstandings": ["big idea 1", "big idea 2"],
+  "courseOutcomes": ["outcome 1", "outcome 2", "outcome 3"],
+  "totalDuration": "string",
+  "modules": [
+    {
+      "id": "module_1",
+      "title": "string",
+      "description": "string (2 sentences)",
+      "duration": "string",
+      "moduleOutcomes": ["outcome 1", "outcome 2"],
+      "lessons": [
+        {
+          "id": "lesson_1_1",
+          "title": "string",
+          "duration": "string",
+          "bloomsLevel": "string (e.g. Apply & Analyze)"
+        }
+      ]
+    }
+  ]
+}
+CRITICAL: Return ONLY the JSON. No text before or after. No markdown.`;
+}
+
+// ── PHASE 2: Full lesson content for one module ────────────────────────────
+function buildLessonContentPrompt(courseTitle, mod, audience, framework, method){
+  const lessonList=mod.lessons.map((l,i)=>`${i+1}. id="${l.id}" title="${l.title}" Bloom's: ${l.bloomsLevel}`).join('\n');
+  return `You are a senior instructional designer writing lesson content for the course "${courseTitle}".
+
+Module: "${mod.title}"
+Audience: ${audience}
+Framework: ${framework}
+Methodology: ${method}
+
+Lessons to write:
+${lessonList}
+
+Apply Malcolm Knowles' Andragogy: connect every lesson to real professional application.
+
+Return ONLY valid JSON (no markdown):
+{
+  "lessons": [
+    {
+      "id": "string (match the lesson id exactly)",
+      "essentialQuestion": "string (provocative professional driving question)",
+      "objectives": [
+        "string (Bloom's action verb + measurable outcome)",
+        "string",
+        "string"
+      ],
+      "keyTerms": [
+        {"term": "string", "definition": "string (concise professional definition)"},
+        {"term": "string", "definition": "string"},
+        {"term": "string", "definition": "string"}
+      ],
+      "hook": "string (2-3 sentence real workplace scenario or professional dilemma)",
+      "content": "string (5-6 sentences of substantive content as connected prose)",
+      "realWorldApplication": "string (2-3 sentences: direct workplace application)",
+      "reflection": "string (Socratic question connecting to learner's own professional experience)",
+      "fourCs": {
+        "criticalThinking": "string",
+        "communication": "string",
+        "collaboration": "string",
+        "creativity": "string"
+      },
+      "aiTools": ["string (specific AI tool + how it supports this lesson)", "string"],
+      "references": [
+        {"citation": "string (APA 7th edition — real published work)", "type": "foundational"},
+        {"citation": "string (APA — contemporary, post-2015)", "type": "contemporary"}
+      ]
+    }
+  ]
+}
+CRITICAL: Return ONLY the JSON. One lesson object per lesson in the module.`;
+}
+
+// ── PHASE 3: Activities for one module ────────────────────────────────────
+function buildActivitiesPrompt(courseTitle, mod, audience, framework, method){
+  const lessonList=mod.lessons.map((l,i)=>`${i+1}. "${l.title}" (Bloom's: ${l.bloomsLevel})`).join('\n');
+  return `You are an instructional designer creating activities for the course "${courseTitle}".
+
+Module: "${mod.title}"
+Audience: ${audience}
+Framework: ${framework}
+Methodology: ${method}
+
+Lessons in this module:
+${lessonList}
+
+For EACH lesson, create higher-order activities aligned to the stated Bloom's level. Questions must be Analyze/Evaluate/Apply level — NOT simple recall.
+
+Return ONLY valid JSON (no markdown):
+{
+  "lessons": [
+    {
+      "id": "string (match the lesson id)",
+      "activities": {
+        "quiz": {
+          "title": "string",
+          "questions": [
+            {"question": "string (Analyze/Evaluate/Apply level)", "options": ["A","B","C","D"], "answer": 0, "explanation": "string (why correct + professional relevance)"},
+            {"question": "string", "options": ["A","B","C","D"], "answer": 1, "explanation": "string"},
+            {"question": "string", "options": ["A","B","C","D"], "answer": 2, "explanation": "string"}
+          ]
+        },
+        "exercise": {
+          "title": "string",
+          "instructions": "string (apply to learner's own professional context)",
+          "items": [
+            {"prompt": "string (apply/analyze — not recall)", "answer": "string (model answer)"},
+            {"prompt": "string", "answer": "string"},
+            {"prompt": "string", "answer": "string"}
+          ]
+        },
+        "discussion": {
+          "title": "string",
+          "description": "string (frame discussion in professional context)",
+          "prompts": [
+            "string (scenario from practice — ask learners to share from experience)",
+            "string (challenge an assumption or evaluate competing approaches)"
+          ],
+          "groupActivity": "string (collaborative activity where peers critique each other's professional approaches)"
+        },
+        "project": {
+          "title": "string (authentic real-world deliverable)",
+          "description": "string (frame as real task using learner's own workplace)",
+          "duration": "string",
+          "steps": ["string","string","string","string"],
+          "deliverables": ["string (specific output)","string"],
+          "rubric": [
+            {"criterion":"string","excellent":"string","satisfactory":"string","needs_improvement":"string"},
+            {"criterion":"string","excellent":"string","satisfactory":"string","needs_improvement":"string"},
+            {"criterion":"string","excellent":"string","satisfactory":"string","needs_improvement":"string"}
+          ]
+        }
+      }
+    }
+  ]
+}
+CRITICAL: Return ONLY the JSON. One object per lesson in the module.`;
+}
+
+// ── Main generation ───────────────────────────────────────────────────────
+async function startGeneration(){
+  hideError();
+  const apiKey=document.getElementById('apiKey').value.trim();
+  const courseTitle=document.getElementById('courseTitle').value.trim();
+  const subject=document.getElementById('subject').value;
+  const audience=document.getElementById('audience').value;
+  const numModules=+document.getElementById('numMod').value;
+  const lpm=+document.getElementById('lpm').value;
+  const outcomes=document.getElementById('outcomes').value.trim();
+  const fw=document.querySelector('input[name="fw"]:checked')?.value||"Bloom's Taxonomy (Revised) + 4Cs Framework";
+  const mt=document.querySelector('input[name="mt"]:checked')?.value||'Connectivism (Siemens & Downes)';
+
+  if(!apiKey) return showError('Please enter your Anthropic API key.');
+  if(!courseTitle) return showError('Please enter a course title.');
+  if(!subject) return showError('Please select a subject.');
+  if(!audience) return showError('Please select a target audience.');
+
+  cfg={apiKey,courseTitle,subject,audience,numModules,lpm,outcomes,framework:fw,method:mt};
+  document.getElementById('plist').innerHTML='';
+  showStep(2); showScreen('generatingScreen');
+
+  try {
+    // ── Phase 1: Course skeleton (fast, small output) ───────────────────
+    addProgItem('s1','Designing course architecture...');
+    const structText=await callAPI(apiKey, buildStructurePrompt(cfg), 2000);
+    const structure=safeJSON(structText);
+    doneProgItem('s1');
+
+    // ── Phase 2 + 3: Per module — content then activities ───────────────
+    for(let mi=0;mi<structure.modules.length;mi++){
+      const mod=structure.modules[mi];
+
+      // Phase 2: Lesson content
+      addProgItem('c'+mi, `Writing lesson content for Module ${mi+1}...`);
+      const contentText=await callAPI(apiKey, buildLessonContentPrompt(structure.courseTitle, mod, cfg.audience, cfg.framework, cfg.method), 5000);
+      const contentData=safeJSON(contentText);
+      if(contentData.lessons){
+        contentData.lessons.forEach((cl,li)=>{
+          if(structure.modules[mi].lessons[li]) Object.assign(structure.modules[mi].lessons[li], cl);
+        });
+      }
+      doneProgItem('c'+mi);
+
+      // Phase 3: Activities
+      addProgItem('m'+mi, `Building activities for Module ${mi+1}...`);
+      const actText=await callAPI(apiKey, buildActivitiesPrompt(structure.courseTitle, mod, cfg.audience, cfg.framework, cfg.method), 4000);
+      const actData=safeJSON(actText);
+      if(actData.lessons){
+        actData.lessons.forEach((aLesson,li)=>{
+          if(structure.modules[mi].lessons[li]) structure.modules[mi].lessons[li].activities=aLesson.activities;
+        });
+      }
+      doneProgItem('m'+mi);
+    }
+
+    addProgItem('fin','Finalizing course package...');
+    courseData=structure;
+    doneProgItem('fin');
+
+    renderPreview(structure);
+    showStep(3); showScreen('previewScreen');
+
+  } catch(err){
+    showStep(1); showScreen('setupScreen');
+    showError('Generation failed: '+err.message);
+    console.error('Generation error:', err);
+  }
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+function renderPreview(data){
+  const total=data.modules.reduce((s,m)=>s+m.lessons.length,0);
+  document.getElementById('courseHero').innerHTML=`
+    <h1>${esc(data.courseTitle)}</h1>
+    <p>${esc(data.courseDescription)}</p>
+    <div class="meta-tags">
+      <span class="mtag">📐 ${esc(data.framework)}</span>
+      <span class="mtag">🔬 ${esc(data.methodology)}</span>
+      <span class="mtag">👥 ${esc(data.targetAudience)}</span>
+    </div>
+    <div class="cstats">
+      <div class="cstat">📚 <strong>${data.modules.length}</strong>&nbsp;Modules</div>
+      <div class="cstat">📖 <strong>${total}</strong>&nbsp;Lessons</div>
+      <div class="cstat">⏱ <strong>${esc(data.totalDuration)}</strong></div>
+    </div>
+    ${data.enduringUnderstandings?.length?`<div class="eu-box"><h4>Enduring Understandings</h4>
+      ${data.enduringUnderstandings.map(u=>`<div class="eu-item">${esc(u)}</div>`).join('')}
+    </div>`:''}`;
+
+  const container=document.getElementById('mlist');
+  container.innerHTML='';
+  data.modules.forEach((mod,mi)=>{
+    const el=document.createElement('div');
+    el.className='mitem';
+    el.innerHTML=`
+      <div class="mhdr" onclick="this.parentElement.classList.toggle('open')">
+        <div class="mnum">M${mi+1}</div>
+        <div class="minfo"><div class="mtitle">${esc(mod.title)}</div><div class="mmeta">${mod.lessons.length} lessons &middot; ${esc(mod.duration)}</div></div>
+        <span class="chev">&#9660;</span>
+      </div>
+      <div class="mbody">
+        <p class="mdesc">${esc(mod.description)}</p>
+        ${mod.moduleOutcomes?.length?`<div class="mouts">${mod.moduleOutcomes.map(o=>`<div class="mout">${esc(o)}</div>`).join('')}</div>`:''}
+        <div class="llist">${mod.lessons.map((les,li)=>renderLesson(les,mi,li)).join('')}</div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function renderLesson(les,mi,li){
+  const uid=`${mi}_${li}`;
+  const fc=les.fourCs||{};
+  const hasActs=les.activities?.quiz;
+  return `
+  <div class="litem">
+    <div class="lhdr" onclick="this.parentElement.classList.toggle('open')">
+      <div class="lnum">${li+1}</div>
+      <div class="linfo">
+        <div class="ltitle">${esc(les.title)}</div>
+        <div class="lmeta"><span>${esc(les.duration)}</span>${les.bloomsLevel?`<span class="blbadge">Bloom's: ${esc(les.bloomsLevel)}</span>`:''}<span>${hasActs?'4 activities':'content only'}</span></div>
+      </div>
+      <span class="chev">&#9660;</span>
+    </div>
+    <div class="lbody">
+      ${les.essentialQuestion?`<div class="eq-box">"${esc(les.essentialQuestion)}"</div>`:''}
+      <div class="slabel">Learning Objectives <span style="color:var(--purple);font-weight:700">(${esc(les.bloomsLevel||'')})</span></div>
+      <div class="obj-list">${les.objectives.map(o=>`<div class="obj-item">${esc(o)}</div>`).join('')}</div>
+      ${les.keyTerms?.length?`<div class="slabel">Key Terms</div><div class="terms-grid">${les.keyTerms.map(kt=>`<div class="term-row"><span class="term-w">${esc(kt.term)}</span><span>${esc(kt.definition)}</span></div>`).join('')}</div>`:''}
+      ${les.hook?`<div class="hook-box"><strong>Opening Hook</strong><p>${esc(les.hook)}</p></div>`:''}
+      <div class="slabel">Lesson Content</div>
+      <div class="content-box">${esc(les.content)}</div>
+      ${les.realWorldApplication?`<div class="rwa-box"><strong>Real-World Application</strong><p>${esc(les.realWorldApplication)}</p></div>`:''}
+      ${les.reflection?`<div class="reflect-box"><strong>Reflection</strong>${esc(les.reflection)}</div>`:''}
+      ${(fc.criticalThinking||fc.communication||fc.collaboration||fc.creativity)?`
+      <div class="slabel">21st Century Skills (4Cs)</div>
+      <div class="fourccs">
+        ${fc.criticalThinking?`<div class="cc ct"><strong>🧠 Critical Thinking</strong>${esc(fc.criticalThinking)}</div>`:''}
+        ${fc.communication?`<div class="cc co"><strong>🗣 Communication</strong>${esc(fc.communication)}</div>`:''}
+        ${fc.collaboration?`<div class="cc cl"><strong>🤝 Collaboration</strong>${esc(fc.collaboration)}</div>`:''}
+        ${fc.creativity?`<div class="cc cr"><strong>💡 Creativity</strong>${esc(fc.creativity)}</div>`:''}
+      </div>`:''}
+      ${les.aiTools?.length?`<div class="slabel">AI-Enhanced Learning Tools</div>
+      <div class="ai-tools">${les.aiTools.map(t=>`<span class="ai-tool">🤖 ${esc(t)}</span>`).join('')}</div>`:''}
+      ${les.references?.length?`<div class="slabel">References (APA 7th)</div>
+      <div class="refs-box">${les.references.map(r=>`<div class="ref-item"><span class="ref-type">${esc(r.type)}</span>${esc(r.citation)}</div>`).join('')}</div>`:''}
+      ${hasActs?`
+      <div class="slabel">Activities</div>
+      <div class="atabs">
+        <button class="atab tq active" onclick="switchTab(this,'${uid}','quiz')">❓ Quiz</button>
+        <button class="atab te" onclick="switchTab(this,'${uid}','exercise')">✏️ Exercise</button>
+        <button class="atab td" onclick="switchTab(this,'${uid}','discussion')">💬 Discussion</button>
+        <button class="atab tp" onclick="switchTab(this,'${uid}','project')">🏗️ Project</button>
+      </div>
+      <div id="ap_quiz_${uid}" class="apanel active">${renderQuiz(les.activities.quiz)}</div>
+      <div id="ap_exercise_${uid}" class="apanel">${renderExercise(les.activities.exercise)}</div>
+      <div id="ap_discussion_${uid}" class="apanel">${renderDiscussion(les.activities.discussion)}</div>
+      <div id="ap_project_${uid}" class="apanel">${renderProject(les.activities.project)}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderQuiz(q){if(!q)return'';
+  return `<div class="abox quiz"><h5>❓ ${esc(q.title)}</h5>
+    ${(q.questions||[]).map((item,i)=>`<div class="qi"><div class="qt">${i+1}. ${esc(item.question)}</div>
+      <div class="qopts">${(item.options||[]).map((o,oi)=>`<div class="qopt ${oi===item.answer?'ok':''}">${String.fromCharCode(65+oi)}. ${esc(o)}${oi===item.answer?' ✓':''}</div>`).join('')}</div>
+      <div class="qexpl">💡 ${esc(item.explanation)}</div></div>`).join('')}</div>`;}
+
+function renderExercise(ex){if(!ex)return'';
+  return `<div class="abox exercise"><h5>✏️ ${esc(ex.title)}</h5>
+    <p class="einst">${esc(ex.instructions)}</p>
+    ${(ex.items||[]).map((item,i)=>`<div class="eitem"><strong>${i+1}.</strong><span>${esc(item.prompt)}</span><span class="eans">→ ${esc(item.answer)}</span></div>`).join('')}</div>`;}
+
+function renderDiscussion(d){if(!d)return'';
+  return `<div class="abox discussion"><h5>💬 ${esc(d.title)}</h5>
+    ${d.description?`<p style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem">${esc(d.description)}</p>`:''}
+    ${(d.prompts||[]).map((p,i)=>`<div class="dp"><span class="dn">${i+1}</span><span>${esc(p)}</span></div>`).join('')}
+    ${d.groupActivity?`<div class="gact"><strong>Collaborative Activity</strong>${esc(d.groupActivity)}</div>`:''}</div>`;}
+
+function renderProject(p){if(!p)return'';
+  return `<div class="abox project"><h5>🏗️ ${esc(p.title)}</h5>
+    <p class="einst">${esc(p.description)} <em>(${esc(p.duration)})</em></p>
+    <div class="slabel">Steps</div>${(p.steps||[]).map((s,i)=>`<div class="pstep"><span class="psn">${i+1}</span><span>${esc(s)}</span></div>`).join('')}
+    <div class="slabel" style="margin-top:.75rem">Deliverables</div>${(p.deliverables||[]).map(d=>`<div class="pdel">📄 ${esc(d)}</div>`).join('')}
+    <div class="slabel" style="margin-top:.75rem">Rubric</div>
+    <table class="rtbl"><thead><tr><th>Criterion</th><th>Excellent</th><th>Satisfactory</th><th>Needs Improvement</th></tr></thead>
+    <tbody>${(p.rubric||[]).map(r=>`<tr><td><strong>${esc(r.criterion)}</strong></td><td>${esc(r.excellent)}</td><td>${esc(r.satisfactory)}</td><td>${esc(r.needs_improvement)}</td></tr>`).join('')}</tbody></table></div>`;}
+
+function switchTab(btn,uid,type){
+  btn.closest('.atabs').querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['quiz','exercise','discussion','project'].forEach(t=>document.getElementById(`ap_${t}_${uid}`).classList.toggle('active',t===type));
+}
+function resetApp(){courseData=null;showStep(1);showScreen('setupScreen');}
+
+// ── SCORM Export ─────────────────────────────────────────────────────────
+async function exportScorm(){
+  if(!courseData)return;
+  const zip=new JSZip();
+  const cid='course_'+Date.now();
+  const safe=courseData.courseTitle.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);
+  zip.file('imsmanifest.xml',buildManifest(courseData,cid));
+  zip.file('shared/style.css',scormCSS());
+  zip.file('shared/scorm_api.js',scormShim());
+  zip.file('index.html',buildCover(courseData));
+  courseData.modules.forEach((mod,mi)=>mod.lessons.forEach((les,li)=>
+    zip.file(`content/module_${mi+1}/lesson_${li+1}.html`,buildLessonPage(les,mod,mi,li,courseData))
+  ));
+  const blob=await zip.generateAsync({type:'blob'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=safe+'_SCORM12.zip';a.click();URL.revokeObjectURL(url);
+}
+
+function buildManifest(data,cid){
+  let items='',resources='';
+  resources+=`\n    <resource identifier="RES_INDEX" type="webcontent" href="index.html">
+      <file href="index.html"/><file href="shared/style.css"/><file href="shared/scorm_api.js"/></resource>`;
+  data.modules.forEach((mod,mi)=>{
+    let li_items='';
+    mod.lessons.forEach((les,li)=>{
+      const lid=`LES_${mi+1}_${li+1}`,rid=`RES_${mi+1}_${li+1}`,href=`content/module_${mi+1}/lesson_${li+1}.html`;
+      li_items+=`\n          <item identifier="${lid}" identifierref="${rid}"><title>${xesc(les.title)}</title></item>`;
+      resources+=`\n    <resource identifier="${rid}" type="webcontent" adlcp:scormtype="sco" href="${href}">
+      <file href="${href}"/><dependency identifierref="RES_INDEX"/></resource>`;
+    });
+    items+=`\n      <item identifier="MOD_${mi+1}"><title>${xesc(mod.title)}</title>${li_items}\n      </item>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="${cid}" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                      http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+  <metadata><schema>ADL SCORM</schema><schemaversion>1.2</schemaversion></metadata>
+  <organizations default="ORG001">
+    <organization identifier="ORG001"><title>${xesc(data.courseTitle)}</title>${items}</organization>
+  </organizations>
+  <resources>${resources}\n  </resources>
+</manifest>`;}
+
+function buildCover(data){
+  const t=data.modules.reduce((s,m)=>s+m.lessons.length,0);
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${hesc(data.courseTitle)}</title>
+<link rel="stylesheet" href="shared/style.css"></head><body>
+<div class="cover"><div class="cover-inner">
+  <div class="badge">${hesc(data.subject||'')} &middot; ${hesc(data.targetAudience||'')}</div>
+  <h1>${hesc(data.courseTitle)}</h1><p>${hesc(data.courseDescription)}</p>
+  <div class="fw-tags"><span class="fw-tag">${hesc(data.framework)}</span><span class="fw-tag">${hesc(data.methodology)}</span></div>
+  <div class="stats"><div class="stat"><strong>${data.modules.length}</strong><span>Modules</span></div>
+    <div class="stat"><strong>${t}</strong><span>Lessons</span></div>
+    <div class="stat"><strong>${hesc(data.totalDuration)}</strong><span>Duration</span></div></div>
+  ${data.enduringUnderstandings?.length?`<div class="eu-box"><h4>Enduring Understandings</h4>
+    ${data.enduringUnderstandings.map(u=>`<div class="eu-item">&#9670; ${hesc(u)}</div>`).join('')}</div>`:''}
+  <div class="mod-list">${data.modules.map((m,i)=>`<div class="mod-row">
+    <div class="mod-badge">M${i+1}</div><div><div class="mod-t">${hesc(m.title)}</div>
+    <div class="mod-m">${m.lessons.length} lessons &middot; ${hesc(m.duration)}</div></div></div>`).join('')}</div>
+</div></div></body></html>`;}
+
+function buildLessonPage(les,mod,mi,li,data){
+  const hasActs=les.activities?.quiz;
+  const qJSON=hasActs?JSON.stringify(les.activities.quiz.questions||[]).replace(/<\/script>/gi,'<\\/script>'):'[]';
+  const fc=les.fourCs||{};
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>${hesc(les.title)}</title><link rel="stylesheet" href="../../shared/style.css">
+<script src="../../shared/scorm_api.js"><\/script></head>
+<body onload="SCORM.init()" onunload="SCORM.finish()"><div class="lpage">
+  <div class="breadcrumb">${hesc(data.courseTitle)} &rsaquo; ${hesc(mod.title)}</div>
+  <div class="lhero">
+    <div class="lnum-badge">Module ${mi+1} &middot; Lesson ${li+1}${les.bloomsLevel?` &middot; Bloom's: ${hesc(les.bloomsLevel)}`:''}</div>
+    <h1>${hesc(les.title)}</h1><div class="ldur">&#9200; ${hesc(les.duration)}</div>
+  </div>
+  ${les.essentialQuestion?`<div class="eq-scorm">"${hesc(les.essentialQuestion)}"</div>`:''}
+  <div class="lsec"><h2>Learning Objectives</h2>
+    <ul class="obj-ul">${les.objectives.map(o=>`<li>${hesc(o)}</li>`).join('')}</ul></div>
+  ${les.keyTerms?.length?`<div class="lsec"><h2>Key Terms</h2>
+    <table class="kterm-tbl"><tbody>${les.keyTerms.map(kt=>`<tr><td class="kt-term">${hesc(kt.term)}</td><td>${hesc(kt.definition)}</td></tr>`).join('')}</tbody></table></div>`:''}
+  ${les.hook?`<div class="hook-scorm"><strong>Opening Hook</strong><p>${hesc(les.hook)}</p></div>`:''}
+  <div class="lsec"><h2>Lesson Content</h2><div class="lcontent">${hesc(les.content)}</div></div>
+  ${les.realWorldApplication?`<div class="rwa-scorm"><strong>Real-World Application</strong><p>${hesc(les.realWorldApplication)}</p></div>`:''}
+  ${les.reflection?`<div class="lsec"><h2>Reflection</h2><div class="reflect-scorm">${hesc(les.reflection)}</div></div>`:''}
+  ${(fc.criticalThinking||fc.communication||fc.collaboration||fc.creativity)?`<div class="lsec"><h2>21st Century Skills (4Cs)</h2><div class="fourccs-scorm">
+    ${fc.criticalThinking?`<div class="fcc ct"><strong>Critical Thinking</strong><p>${hesc(fc.criticalThinking)}</p></div>`:''}
+    ${fc.communication?`<div class="fcc co"><strong>Communication</strong><p>${hesc(fc.communication)}</p></div>`:''}
+    ${fc.collaboration?`<div class="fcc cl"><strong>Collaboration</strong><p>${hesc(fc.collaboration)}</p></div>`:''}
+    ${fc.creativity?`<div class="fcc cr"><strong>Creativity</strong><p>${hesc(fc.creativity)}</p></div>`:''}</div></div>`:''}
+  ${les.aiTools?.length?`<div class="lsec"><h2>AI-Enhanced Learning Tools</h2>
+    <div class="ai-tools-scorm">${les.aiTools.map(t=>`<div class="ait">&#129302; ${hesc(t)}</div>`).join('')}</div></div>`:''}
+  ${les.references?.length?`<div class="lsec"><h2>References (APA 7th Edition)</h2>
+    <div class="refs-scorm">${les.references.map(r=>`<div class="ref-s"><span class="rtype">${hesc(r.type)}</span>${hesc(r.citation)}</div>`).join('')}</div></div>`:''}
+  ${hasActs?`<div class="lsec"><h2>Activities</h2>
+    <div class="ablock quiz-b"><h3>&#10067; Quiz: ${hesc(les.activities.quiz.title)}</h3>
+      <form onsubmit="return runQuiz(this)">
+        ${(les.activities.quiz.questions||[]).map((q,qi)=>`<div class="qblock" id="qb${qi}">
+          <p class="qtxt"><strong>${qi+1}.</strong> ${hesc(q.question)}</p>
+          ${(q.options||[]).map((o,oi)=>`<label class="qopt"><input type="radio" name="q${qi}" value="${oi}"> ${String.fromCharCode(65+oi)}. ${hesc(o)}</label>`).join('')}
+          <div class="qfb hidden" id="qfb${qi}"></div></div>`).join('')}
+        <button type="submit" class="sbtn amber">Check Answers</button>
+      </form>
+      <div class="score-box hidden" id="scoreBox"></div>
+      <script>var QD=${qJSON};function runQuiz(f){var s=0;QD.forEach(function(q,i){var v=f['q'+i]&&parseInt(f['q'+i].value),fb=document.getElementById('qfb'+i);fb.classList.remove('hidden');if(v===q.answer){s++;fb.className='qfb ok';fb.textContent='\u2713 Correct! '+q.explanation;}else{fb.className='qfb err';fb.textContent='\u2717 '+q.explanation;}});var p=Math.round(s/QD.length*100),sb=document.getElementById('scoreBox');sb.classList.remove('hidden');sb.innerHTML='<strong>Score: '+s+'/'+QD.length+' ('+p+'%)<\/strong>'+(p>=70?' <span style="color:#065F46">\u2713 Passed<\/span>':' <span style="color:#991B1B">Review needed<\/span>');SCORM.set('cmi.core.score.raw',p);SCORM.set('cmi.core.score.min','0');SCORM.set('cmi.core.score.max','100');SCORM.set('cmi.core.lesson_status',p>=70?'passed':'failed');return false;}<\/script>
+    </div>
+    <div class="ablock ex-b"><h3>&#9998; Exercise: ${hesc(les.activities.exercise.title)}</h3>
+      <p class="ainst">${hesc(les.activities.exercise.instructions)}</p>
+      ${(les.activities.exercise.items||[]).map((it,ii)=>`<div class="exrow"><span class="exn">${ii+1}</span><span class="exp">${hesc(it.prompt)}</span>
+        <input type="text" class="exinp" data-ans="${hesc(it.answer)}" placeholder="Your answer...">
+        <button onclick="chkEx(this)" class="sbtn green sm">Check</button><span class="exres"></span></div>`).join('')}
+      <script>function chkEx(b){var i=b.previousElementSibling.previousElementSibling,r=b.nextElementSibling,c=i.dataset.ans.toLowerCase().trim(),g=i.value.toLowerCase().trim();if(!g)return;(g===c||c.includes(g)||g.includes(c))?(r.className='exres ok',r.textContent='\u2713 Correct!'):(r.className='exres err',r.textContent='\u2717 See: '+i.dataset.ans);}<\/script>
+    </div>
+    <div class="ablock disc-b"><h3>&#128172; Discussion: ${hesc(les.activities.discussion.title)}</h3>
+      ${les.activities.discussion.description?`<p class="ainst">${hesc(les.activities.discussion.description)}</p>`:''}
+      ${(les.activities.discussion.prompts||[]).map((p,pi)=>`<div class="dprompt"><span class="dn">${pi+1}</span><p>${hesc(p)}</p></div>`).join('')}
+      ${les.activities.discussion.groupActivity?`<div class="grpact"><strong>Collaborative Activity</strong><p>${hesc(les.activities.discussion.groupActivity)}</p></div>`:''}
+      <div class="rarea"><label>Your Response:</label>
+        <textarea placeholder="Share your professional perspective..." oninput="SCORM.set('cmi.suspend_data',this.value.substring(0,4096))"></textarea>
+        <button onclick="this.textContent='\u2713 Submitted';this.disabled=true;SCORM.set('cmi.core.lesson_status','completed');" class="sbtn purple">Submit Response</button>
+      </div></div>
+    <div class="ablock proj-b"><h3>&#127959; Project: ${hesc(les.activities.project.title)}</h3>
+      <p class="ainst">${hesc(les.activities.project.description)} <em>(${hesc(les.activities.project.duration)})</em></p>
+      <h4>Steps</h4><ol class="plist">${(les.activities.project.steps||[]).map(s=>`<li>${hesc(s)}</li>`).join('')}</ol>
+      <h4>Deliverables</h4><ul class="plist">${(les.activities.project.deliverables||[]).map(d=>`<li>${hesc(d)}</li>`).join('')}</ul>
+      <h4>Assessment Rubric</h4>
+      <table class="rubric"><thead><tr><th>Criterion</th><th>Excellent</th><th>Satisfactory</th><th>Needs Improvement</th></tr></thead>
+      <tbody>${(les.activities.project.rubric||[]).map(r=>`<tr><td><strong>${hesc(r.criterion)}</strong></td><td>${hesc(r.excellent)}</td><td>${hesc(r.satisfactory)}</td><td>${hesc(r.needs_improvement)}</td></tr>`).join('')}</tbody></table>
+    </div></div>`:''}
+  <div class="lnav"><button onclick="completeLes(this)" class="sbtn green lg">&#10003; Mark Lesson Complete</button></div>
+  <script>function completeLes(b){SCORM.set('cmi.core.lesson_status','completed');b.textContent='\u2713 Completed';b.disabled=true;}<\/script>
+</div></body></html>`;}
+
+function scormCSS(){return `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#0F172A;line-height:1.6}
+.cover{min-height:100vh;background:linear-gradient(135deg,#3730A3,#4F46E5,#6366F1);display:flex;align-items:center;justify-content:center;padding:2rem}
+.cover-inner{max-width:680px;color:white;text-align:center}
+.badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:.35rem 1rem;font-size:.8rem;font-weight:700;margin-bottom:1.25rem}
+.cover-inner h1{font-size:2rem;font-weight:900;margin-bottom:1rem;line-height:1.2}
+.cover-inner p{font-size:.9rem;opacity:.85;margin-bottom:1.5rem}
+.fw-tags{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
+.fw-tag{background:rgba(255,255,255,.15);border-radius:20px;padding:.25rem .875rem;font-size:.75rem;font-weight:700}
+.stats{display:flex;gap:2rem;justify-content:center;margin-bottom:1.75rem}
+.stat{text-align:center}.stat strong{display:block;font-size:1.75rem;font-weight:900}.stat span{font-size:.72rem;opacity:.7}
+.eu-box{background:rgba(255,255,255,.12);border-radius:8px;padding:1rem;margin-bottom:1.5rem;text-align:left}
+.eu-box h4{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;opacity:.7;margin-bottom:.5rem}
+.eu-item{font-size:.82rem;opacity:.9;margin-bottom:.25rem}
+.mod-list{display:flex;flex-direction:column;gap:.625rem;max-width:480px;margin:0 auto;text-align:left}
+.mod-row{background:rgba(255,255,255,.15);border-radius:10px;padding:.875rem 1.125rem;display:flex;align-items:center;gap:1rem}
+.mod-badge{width:38px;height:38px;background:rgba(255,255,255,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0}
+.mod-t{font-weight:700;font-size:.875rem}.mod-m{font-size:.72rem;opacity:.7}
+.lpage{max-width:820px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.breadcrumb{font-size:.75rem;color:#64748B;margin-bottom:1.5rem}
+.lhero{background:linear-gradient(135deg,#3730A3,#4F46E5);color:white;border-radius:12px;padding:1.75rem 2rem;margin-bottom:1.5rem}
+.lnum-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:.25rem .875rem;font-size:.72rem;font-weight:700;margin-bottom:.75rem}
+.lhero h1{font-size:1.4rem;font-weight:900;margin-bottom:.4rem}.ldur{font-size:.8rem;opacity:.8}
+.eq-scorm{background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border-left:3px solid #8B5CF6;border-radius:0 8px 8px 0;padding:.875rem 1.25rem;margin-bottom:1.5rem;font-style:italic;font-size:.9rem;color:#4C1D95;font-weight:600}
+.lsec{margin-bottom:2rem}.lsec h2{font-size:1rem;font-weight:800;color:#1E293B;padding-bottom:.5rem;border-bottom:2px solid #E2E8F0;margin-bottom:1rem}
+.obj-ul{list-style:none;display:flex;flex-direction:column;gap:.4rem}
+.obj-ul li{padding:.625rem .875rem;background:#EEF2FF;border-left:4px solid #4F46E5;border-radius:0 6px 6px 0;font-size:.875rem}
+.kterm-tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+.kterm-tbl td{padding:.5rem .75rem;border:1px solid #E2E8F0}
+.kt-term{font-weight:800;color:#4F46E5;width:160px;vertical-align:top}
+.hook-scorm{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin-bottom:1.5rem}
+.hook-scorm strong{display:block;font-size:.7rem;color:#92400E;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.hook-scorm p{font-size:.875rem;line-height:1.65}
+.lcontent{background:#F1F5F9;border-radius:8px;padding:1.25rem;font-size:.9rem;line-height:1.75}
+.rwa-scorm{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border-left:4px solid #10B981;border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin-bottom:1.5rem}
+.rwa-scorm strong{display:block;font-size:.7rem;color:#065F46;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.rwa-scorm p{font-size:.875rem;line-height:1.65}
+.reflect-scorm{background:#F0FDF4;border:1px dashed #6EE7B7;border-radius:8px;padding:.875rem 1rem;font-style:italic;color:#065F46;font-size:.875rem}
+.fourccs-scorm{display:grid;grid-template-columns:1fr 1fr;gap:.625rem}
+.fcc{padding:.75rem 1rem;border-radius:8px;font-size:.82rem}
+.fcc strong{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
+.fcc p{line-height:1.5}
+.fcc.ct{background:#DBEAFE;color:#1E40AF}.fcc.co{background:#D1FAE5;color:#065F46}
+.fcc.cl{background:#FEF3C7;color:#92400E}.fcc.cr{background:#FEE2E2;color:#991B1B}
+.ai-tools-scorm{display:flex;flex-direction:column;gap:.375rem}
+.ait{background:#F0FDFA;border:1px solid #99F6E4;border-radius:8px;padding:.625rem .875rem;font-size:.85rem;color:#134E4A;font-weight:600}
+.refs-scorm{background:#F8FAFC;border-radius:8px;padding:.875rem 1rem}
+.ref-s{font-size:.78rem;color:#64748B;padding:.35rem 0;border-bottom:1px solid #E2E8F0;font-style:italic}
+.ref-s:last-child{border:none}
+.rtype{display:inline-block;background:white;border:1px solid #E2E8F0;border-radius:10px;padding:.05rem .5rem;font-size:.62rem;font-weight:800;font-style:normal;color:#4F46E5;margin-right:.4rem}
+.ablock{background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.ablock h3{font-size:.95rem;font-weight:800;color:#1E293B;margin-bottom:1rem}
+.ablock h4{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#991B1B;margin:1rem 0 .5rem}
+.quiz-b{border-top:4px solid #F59E0B}.ex-b{border-top:4px solid #10B981}
+.disc-b{border-top:4px solid #8B5CF6}.proj-b{border-top:4px solid #EF4444}
+.qblock{background:#F8FAFC;border-radius:8px;padding:1rem;margin-bottom:.75rem}
+.qtxt{font-weight:700;font-size:.875rem;margin-bottom:.625rem}
+.qopt{display:block;padding:.3rem .5rem;font-size:.82rem;cursor:pointer;border-radius:4px}
+.qopt:hover{background:#F1F5F9}
+.qfb{padding:.5rem .75rem;border-radius:6px;font-size:.8rem;margin-top:.5rem}
+.qfb.hidden{display:none}.qfb.ok{background:#D1FAE5;color:#065F46}.qfb.err{background:#FEE2E2;color:#991B1B}
+.score-box{margin-top:1rem;padding:.75rem 1rem;background:#F1F5F9;border-radius:8px;font-size:.875rem}
+.score-box.hidden{display:none}
+.ainst{font-size:.82rem;color:#64748B;margin-bottom:.875rem}
+.exrow{display:flex;align-items:center;gap:.625rem;background:#F8FAFC;border-radius:8px;padding:.625rem .875rem;margin-bottom:.5rem;flex-wrap:wrap}
+.exn{width:26px;height:26px;background:#10B981;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+.exp{font-size:.825rem;flex:1;min-width:120px}
+.exinp{padding:.35rem .625rem;border:1.5px solid #E2E8F0;border-radius:6px;font-size:.825rem;width:150px;outline:none;font-family:inherit}
+.exinp:focus{border-color:#10B981}
+.exres{font-size:.78rem;font-weight:700}.exres.ok{color:#065F46}.exres.err{color:#991B1B}
+.dprompt{display:flex;gap:.625rem;align-items:flex-start;background:#F5F3FF;border-radius:8px;padding:.75rem;margin-bottom:.5rem}
+.dn{width:26px;height:26px;background:#8B5CF6;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+.dprompt p{font-size:.875rem}
+.grpact{background:#EDE9FE;border-left:4px solid #8B5CF6;padding:.875rem 1rem;border-radius:0 8px 8px 0;margin:.875rem 0}
+.grpact strong{display:block;font-size:.72rem;color:#5B21B6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem}
+.grpact p{font-size:.875rem}
+.rarea{display:flex;flex-direction:column;gap:.5rem;margin-top:.875rem}
+.rarea label{font-size:.78rem;font-weight:700;color:#64748B}
+.rarea textarea{width:100%;min-height:90px;padding:.75rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:.875rem;resize:vertical;font-family:inherit;outline:none}
+.rarea textarea:focus{border-color:#8B5CF6}
+.plist{padding-left:1.5rem;display:flex;flex-direction:column;gap:.35rem;margin-bottom:.75rem}
+.plist li{font-size:.875rem;padding:.25rem 0}
+.rubric{width:100%;border-collapse:collapse;font-size:.75rem}
+.rubric th{background:#FEE2E2;color:#991B1B;padding:.45rem .625rem;text-align:left;border:1px solid #FECACA;font-weight:800}
+.rubric td{padding:.45rem .625rem;border:1px solid #E2E8F0;vertical-align:top}
+.rubric tr:nth-child(even) td{background:#F8FAFC}
+.sbtn{padding:.6rem 1.25rem;border:none;border-radius:7px;font-size:.875rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+.sbtn:hover{opacity:.88;transform:translateY(-1px)}.sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.sbtn.amber{background:#F59E0B;color:white;margin-top:.875rem}
+.sbtn.green{background:#10B981;color:white}.sbtn.purple{background:#8B5CF6;color:white;align-self:flex-start}
+.sbtn.sm{padding:.35rem .75rem;font-size:.78rem}.sbtn.lg{padding:.875rem 2.5rem;font-size:1rem}
+.lnav{text-align:center;margin-top:2.5rem;padding-top:2rem;border-top:1px solid #E2E8F0}
+@media(max-width:640px){.fourccs-scorm{grid-template-columns:1fr}}`;}
+
+function scormShim(){return `var SCORM=(function(){var A=null,ok=false;function f(w){var n=0;while(!w.API&&w.parent&&w.parent!==w&&n++<12)w=w.parent;return w.API||null;}return{init:function(){A=f(window);if(A)ok=A.LMSInitialize('')==='true';},set:function(k,v){if(A&&ok){A.LMSSetValue(k,String(v));A.LMSCommit('');}},get:function(k){return A&&ok?A.LMSGetValue(k):'';},finish:function(){if(A&&ok){A.LMSFinish('');ok=false;}}};})();`;}
+
+function exportJson(){
+  if(!courseData)return;
+  const blob=new Blob([JSON.stringify(courseData,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='course_data.json';a.click();URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
