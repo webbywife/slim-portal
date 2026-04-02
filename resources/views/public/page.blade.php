@@ -37,6 +37,7 @@
       background: rgba(255,255,255,.97);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(201,168,76,.15);
+      padding-top: 15px;
       height: var(--nav-h);
     }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: var(--nav-h); }

@@ -124,6 +124,7 @@
       border-bottom: 1px solid var(--border);
       height: var(--nav-h);
       transition: box-shadow .3s;
+      padding-top: 15px;
     }
     #nav.scrolled { box-shadow: 0 4px 32px rgba(42,32,32,.1); }
     .nav-inner {
@@ -1017,7 +1018,7 @@
     }
     @media (max-width: 480px) {
       .hero-stats { grid-template-columns: 1fr; }
-      .stat-item { border-right: none; border-bottom: 1px solid rgba(201,168,76,.15); }
+      .stat-item { border-right: none; border-bottom: 1px solid rgba(201,168,76,.15);}
       .stat-item:last-child { border-bottom: none; }
     }
 
