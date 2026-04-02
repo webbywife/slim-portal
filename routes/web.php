@@ -8,6 +8,7 @@ use App\Http\Controllers\PublicController;
 Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact.submit');
 Route::get('/page/{slug}', [PublicController::class, 'page'])->name('page.show');
+Route::get('/courses/{slug}', [PublicController::class, 'course'])->name('course.show');
 
 // Auth
 Route::get('/admin/login',   [LoginController::class, 'showForm'])->name('login');

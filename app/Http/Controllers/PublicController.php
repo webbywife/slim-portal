@@ -32,6 +32,14 @@ class PublicController extends Controller {
         ]));
     }
 
+    public function course(string $slug) {
+        $course = Course::with('modules.submodules')
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->firstOrFail();
+        return view('public.course', array_merge($this->sharedData(), compact('course')));
+    }
+
     public function page(string $slug) {
         $page = Page::where('slug', $slug)->where('is_active', true)->firstOrFail();
         return view('public.page', array_merge($this->sharedData(), compact('page')));

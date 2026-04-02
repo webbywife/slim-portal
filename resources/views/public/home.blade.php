@@ -1344,7 +1344,7 @@
 
     <div class="courses-grid">
       @foreach($courses as $i => $course)
-      <div class="course-card reveal {{ $i % 3 === 1 ? 'reveal-delay-1' : ($i % 3 === 2 ? 'reveal-delay-2' : '') }}">
+      <a href="{{ $course->slug ? route('course.show', $course->slug) : '#courses' }}" style="text-decoration:none;color:inherit;display:block;"><div class="course-card reveal {{ $i % 3 === 1 ? 'reveal-delay-1' : ($i % 3 === 2 ? 'reveal-delay-2' : '') }}">
         <div class="course-img">
           @if(!empty($course->course_image))
             <div class="course-img-bg" style="background:{{ $course->card_gradient }};"></div>
