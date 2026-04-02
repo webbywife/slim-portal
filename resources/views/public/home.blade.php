@@ -363,6 +363,7 @@
       position: relative; z-index: 2;
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       border-top: 1px solid rgba(201,168,76,.2);
+      background: #711c32c9;
       width: 100%;
       flex-shrink: 0;
       opacity: 0; animation: fadeUp .9s 1s var(--ease) forwards;
