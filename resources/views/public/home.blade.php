@@ -11,7 +11,7 @@
   <style>
     /* ─── Design Tokens ─────────────────────────────────────── */
     :root {
-      --maroon:   #7B1213;
+      --maroon:   #8c1a37;
       --maroon-d: #550D0E;
       --maroon-l: #9E2122;
       --gold:     #C9A84C;

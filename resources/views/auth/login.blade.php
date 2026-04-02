@@ -6,7 +6,7 @@
   <title>Admin Login — Slim's Fashion &amp; Arts School</title>
   <style>
     :root {
-      --maroon: #7B1213; --maroon-d: #550D0E; --maroon-db: #2E0A0B;
+      --maroon: #8c1a37; --maroon-d: #550D0E; --maroon-db: #2E0A0B;
       --gold: #C9A84C; --gold-l: #E2C47A;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

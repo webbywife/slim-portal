@@ -6,7 +6,7 @@
   <title>{{ $pageTitle ?? 'Admin' }} — Slim's CMS</title>
   <style>
     :root {
-      --maroon:    #7B1213;
+      --maroon:    #8c1a37;
       --maroon-d:  #550D0E;
       --maroon-db: #2E0A0B;
       --gold:      #C9A84C;

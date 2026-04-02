@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --maroon:   #7B1213;
+      --maroon:   #8c1a37;
       --maroon-d: #550D0E;
       --gold:     #C9A84C;
       --gold-l:   #E2C47A;
