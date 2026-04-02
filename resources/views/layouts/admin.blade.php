@@ -315,6 +315,10 @@
       <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M5 4V2h6v2"/></svg>
       Courses
     </a>
+    <a href="{{ route('admin.pages.index') }}" class="sidebar-link {{ ($currentPage ?? '') === 'pages' ? 'active' : '' }}">
+      <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h7l3 3v11H3V1z"/><path d="M10 1v3h3"/><path d="M5 7h6M5 10h4"/></svg>
+      Pages
+    </a>
     <a href="{{ route('admin.gallery.index') }}" class="sidebar-link {{ ($currentPage ?? '') === 'gallery' ? 'active' : '' }}">
       <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1"/><circle cx="5.5" cy="7" r="1.5"/><path d="M1 11l4-3 3 2 2-2 5 4"/></svg>
       Gallery

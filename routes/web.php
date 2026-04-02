@@ -7,6 +7,7 @@ use App\Http\Controllers\PublicController;
 // Public site
 Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact.submit');
+Route::get('/page/{slug}', [PublicController::class, 'page'])->name('page.show');
 
 // Auth
 Route::get('/admin/login',   [LoginController::class, 'showForm'])->name('login');
@@ -23,6 +24,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Courses
     Route::resource('courses', Admin\CourseController::class)->except(['show']);
+
+    // Pages
+    Route::resource('pages', Admin\PageController::class)->except(['show']);
 
     // Gallery
     Route::get('/gallery',             [Admin\GalleryController::class, 'index'])->name('gallery.index');
