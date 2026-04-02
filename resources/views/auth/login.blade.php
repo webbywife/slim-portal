@@ -30,12 +30,11 @@
     }
     .seal-icon {
       width: 64px; height: 64px; border-radius: 50%;
-      background: var(--maroon);
-      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
       margin-bottom: 1rem;
-      box-shadow: 0 8px 24px rgba(123,18,19,.35);
+      box-shadow: 0 8px 24px rgba(61,16,28,.4);
     }
-    .seal-icon svg { width: 32px; height: 32px; }
+    .seal-icon img { width: 64px; height: 64px; object-fit: cover; display: block; }
     .login-title {
       font-size: 1.25rem; font-weight: 700; color: var(--maroon-d);
       margin-bottom: .25rem;
@@ -89,9 +88,7 @@
   <div class="login-card">
     <div class="login-seal">
       <div class="seal-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="1.5">
-          <path d="M12 2l2.5 7.5H22l-6.5 4.7 2.5 7.5L12 17.4l-6 4.3 2.5-7.5L2 9.5h7.5z"/>
-        </svg>
+        <img src="/favicon.png">
       </div>
       <div class="login-title">Slim's CMS</div>
       <div class="login-sub">Fashion &amp; Arts School</div>

@@ -138,11 +138,10 @@
     .nav-seal {
       width: 44px; height: 44px;
       border-radius: 50%;
-      background: var(--maroon);
-      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
       flex-shrink: 0;
     }
-    .nav-seal svg { width: 28px; height: 28px; }
+    .nav-seal img { width: 44px; height: 44px; object-fit: cover; display: block; }
     .nav-brand { line-height: 1.1; }
     .nav-brand-name {
       font-family: 'Playfair Display', serif;
@@ -1066,9 +1065,7 @@
     <div class="nav-inner">
       <a href="#" class="nav-logo">
         <div class="nav-seal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="1.5">
-            <path d="M12 2l2.5 7.5H22l-6.5 4.7 2.5 7.5L12 17.4l-6 4.3 2.5-7.5L2 9.5h7.5z"/>
-          </svg>
+          <img src="/favicon.png">
         </div>
         <div class="nav-brand">
           <div class="nav-brand-name">{{ $siteName }}</div>
