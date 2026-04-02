@@ -88,7 +88,7 @@
       color: var(--white);
     }
     .btn-maroon:hover {
-      background: var(--maroon-d);
+      background: #3d101c;
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(123,18,19,.3);
     }
@@ -105,7 +105,7 @@
 
     /* ─── Announcement Bar ───────────────────────────────────── */
     #announce {
-      background: var(--maroon-d);
+      background: #3d101c;
       color: rgba(255,255,255,.85);
       font-size: .72rem; font-weight: 300;
       letter-spacing: .08em;
@@ -251,7 +251,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--maroon-d);
+      background: #3d101c;
     }
     #hero > .container {
       flex: 1;
@@ -260,22 +260,7 @@
     }
     .hero-bg {
       position: absolute; inset: 0;
-      background:
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 28px,
-          rgba(255,255,255,.025) 28px,
-          rgba(255,255,255,.025) 30px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          transparent,
-          transparent 28px,
-          rgba(255,255,255,.025) 28px,
-          rgba(255,255,255,.025) 30px
-        ),
-        radial-gradient(ellipse 90% 80% at 65% 40%, #9E2122 0%, var(--maroon-d) 60%, #2A0808 100%);
+      background-color: #3d101c;
     }
     .hero-diagonal {
       position: absolute; right: 0; top: 0;
@@ -511,7 +496,7 @@
 
     /* ─── ONLINE LEARNING ────────────────────────────────────── */
     #online {
-      background: var(--maroon-d);
+      background: #3d101c;
       overflow: hidden;
       padding-block: 0;
     }
