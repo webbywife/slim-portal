@@ -3,12 +3,19 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\MoodleController;
 
 // Public site
 Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact.submit');
 Route::get('/page/{slug}', [PublicController::class, 'page'])->name('page.show');
 Route::get('/courses/{slug}', [PublicController::class, 'course'])->name('course.show');
+
+// LMS public pages
+Route::get('/lms', [MoodleController::class, 'index'])->name('lms.index');
+Route::get('/lms/apply', [MoodleController::class, 'applyForm'])->name('lms.apply');
+Route::post('/lms/apply', [MoodleController::class, 'applySubmit'])->name('lms.apply.submit');
+Route::get('/lms/sso', [MoodleController::class, 'sso'])->name('lms.sso');
 
 // Auth
 Route::get('/admin/login',   [LoginController::class, 'showForm'])->name('login');
@@ -53,6 +60,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Settings (contact, footer, social)
     Route::get('/settings',            [Admin\SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings/{section}', [Admin\SettingController::class, 'update'])->name('settings.update');
+
+    // LMS / Moodle
+    Route::get('/lms/applications',                            [MoodleController::class, 'adminApplications'])->name('lms.applications');
+    Route::post('/lms/applications/{app}/approve',             [MoodleController::class, 'adminApprove'])->name('lms.approve');
+    Route::get('/lms/moodle-courses',                          [MoodleController::class, 'adminMoodleCourses'])->name('lms.moodle-courses');
 
     // SCORM Tool link (just redirects to the standalone tool)
     Route::get('/scorm-tool',          fn() => redirect('/scorm-tool/index.html'))->name('scorm-tool');
